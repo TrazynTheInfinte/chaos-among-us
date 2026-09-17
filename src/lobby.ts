@@ -1,6 +1,6 @@
 import { get, onDisconnect, onValue, ref, serverTimestamp, set, update, type Unsubscribe } from 'firebase/database'
 import { db, ensureSignedIn } from './firebase'
-import type { Lobby } from './types'
+import type { Lobby, LobbyPlayer, LobbyStatus } from './types'
 
 // Excludes visually ambiguous characters (0/O, 1/I).
 const CODE_CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
@@ -28,7 +28,11 @@ export async function createLobby(name: string): Promise<string> {
   const uid = await ensureSignedIn()
   const code = generateRoomCode()
 
-  const existing = await get(ref(db, `lobbies/${code}`))
+  // The database rules deliberately grant no .read on lobbies/$lobbyCode itself (only on
+  // specific children), so a role assigned later stays hidden from non-owners (see ADR /
+  // CONTEXT.md role secrecy). That means existence has to be checked via a granted child
+  // path, never the whole lobby node.
+  const existing = await get(ref(db, `lobbies/${code}/hostUid`))
   if (existing.exists()) {
     return createLobby(name) // extremely unlikely collision; regenerate
   }
@@ -57,17 +61,19 @@ export async function createLobby(name: string): Promise<string> {
 export async function joinLobby(rawCode: string, name: string): Promise<string> {
   const code = rawCode.trim().toUpperCase()
   const uid = await ensureSignedIn()
-  const snapshot = await get(ref(db, `lobbies/${code}`))
 
-  if (!snapshot.exists()) {
+  const hostUidSnapshot = await get(ref(db, `lobbies/${code}/hostUid`))
+  if (!hostUidSnapshot.exists()) {
     throw new Error('No lobby found with that room code.')
   }
 
-  const lobby = snapshot.val() as Lobby
-  if (lobby.status !== 'waiting') {
+  const statusSnapshot = await get(ref(db, `lobbies/${code}/status`))
+  if (statusSnapshot.val() !== 'waiting') {
     throw new Error('That lobby has already started or ended.')
   }
-  if (Object.keys(lobby.players ?? {}).length >= 6) {
+
+  const playersSnapshot = await get(ref(db, `lobbies/${code}/players`))
+  if (Object.keys((playersSnapshot.val() as Record<string, LobbyPlayer> | null) ?? {}).length >= 6) {
     throw new Error('That lobby is full (6 players max).')
   }
 
@@ -84,10 +90,54 @@ export async function joinLobby(rawCode: string, name: string): Promise<string> 
   return code
 }
 
+/**
+ * Assembles a Lobby view from separately-readable child paths (see createLobby's comment
+ * on why lobbies/$lobbyCode itself can't be read directly).
+ */
 export function subscribeToLobby(code: string, callback: (lobby: Lobby | null) => void): Unsubscribe {
-  return onValue(ref(db, `lobbies/${code}`), (snapshot) => {
-    callback(snapshot.exists() ? (snapshot.val() as Lobby) : null)
-  })
+  let hostUid: string | undefined
+  let status: LobbyStatus | undefined
+  let createdAt: number | undefined
+  let players: Record<string, LobbyPlayer> | undefined
+  let hostUidLoaded = false
+
+  const emit = () => {
+    if (!hostUidLoaded) return
+    if (!hostUid) {
+      callback(null)
+      return
+    }
+    callback({
+      hostUid,
+      status: status ?? 'waiting',
+      createdAt: createdAt ?? 0,
+      players: players ?? {},
+    })
+  }
+
+  const unsubscribers = [
+    onValue(ref(db, `lobbies/${code}/hostUid`), (snapshot) => {
+      hostUid = (snapshot.val() as string | null) ?? undefined
+      hostUidLoaded = true
+      emit()
+    }),
+    onValue(ref(db, `lobbies/${code}/status`), (snapshot) => {
+      status = (snapshot.val() as LobbyStatus | null) ?? undefined
+      emit()
+    }),
+    onValue(ref(db, `lobbies/${code}/createdAt`), (snapshot) => {
+      createdAt = (snapshot.val() as number | null) ?? undefined
+      emit()
+    }),
+    onValue(ref(db, `lobbies/${code}/players`), (snapshot) => {
+      players = (snapshot.val() as Record<string, LobbyPlayer> | null) ?? {}
+      emit()
+    }),
+  ]
+
+  return () => {
+    for (const unsubscribe of unsubscribers) unsubscribe()
+  }
 }
 
 export async function startLobby(code: string): Promise<void> {
