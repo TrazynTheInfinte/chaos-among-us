@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Chaos Among Us</title>
+    <link rel="stylesheet" href="/src/style.css" />
+  </head>
+  <body>
+    <div id="menu">
+      <h1>Chaos Among Us</h1>
+
+      <form id="create-form">
+        <h2>Create Lobby</h2>
+        <input id="create-name" type="text" placeholder="Your name" maxlength="20" required />
+        <button type="submit">Create Lobby</button>
+      </form>
+
+      <form id="join-form">
+        <h2>Join Lobby</h2>
+        <input id="join-name" type="text" placeholder="Your name" maxlength="20" required />
+        <input id="join-code" type="text" placeholder="Room code" maxlength="5" required />
+        <button type="submit">Join Lobby</button>
+      </form>
+
+      <p id="menu-error"></p>
+    </div>
+
+    <div id="lobby" hidden>
+      <h1>Lobby: <span id="lobby-code"></span></h1>
+      <ul id="lobby-players"></ul>
+      <button id="start-game" hidden>Start Game</button>
+    </div>
+
+    <div id="game" hidden></div>
+
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

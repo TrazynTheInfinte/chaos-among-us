@@ -1,0 +1,33 @@
+{
+  "rules": {
+    "lobbies": {
+      "$lobbyCode": {
+        "hostUid": {
+          ".read": "auth != null",
+          ".write": "auth != null && !data.exists() && newData.val() === auth.uid"
+        },
+        "status": {
+          ".read": "auth != null",
+          ".write": "auth != null && auth.uid === root.child('lobbies').child($lobbyCode).child('hostUid').val()"
+        },
+        "createdAt": {
+          ".read": "auth != null",
+          ".write": "auth != null && auth.uid === root.child('lobbies').child($lobbyCode).child('hostUid').val()"
+        },
+        "players": {
+          ".read": "auth != null",
+          "$playerId": {
+            ".write": "auth != null && auth.uid === $playerId",
+            ".validate": "newData.hasChildren(['name', 'isHost', 'connected', 'joinedAt']) && newData.child('isHost').val() === (auth.uid === root.child('lobbies').child($lobbyCode).child('hostUid').val())"
+          }
+        },
+        "roles": {
+          "$playerId": {
+            ".read": "auth != null && (auth.uid === $playerId || auth.uid === root.child('lobbies').child($lobbyCode).child('hostUid').val())",
+            ".write": "auth != null && auth.uid === root.child('lobbies').child($lobbyCode).child('hostUid').val()"
+          }
+        }
+      }
+    }
+  }
+}
