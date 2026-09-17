@@ -1,4 +1,4 @@
-import { get, onDisconnect, onValue, ref, serverTimestamp, update, type Unsubscribe } from 'firebase/database'
+import { get, onDisconnect, onValue, ref, serverTimestamp, set, update, type Unsubscribe } from 'firebase/database'
 import { db, ensureSignedIn } from './firebase'
 import type { Lobby } from './types'
 
@@ -33,8 +33,13 @@ export async function createLobby(name: string): Promise<string> {
     return createLobby(name) // extremely unlikely collision; regenerate
   }
 
+  // hostUid must be written and durably committed before anything else: the status/
+  // createdAt/players rules all check root.child(...).hostUid, and a security rule
+  // evaluating one path in a multi-location update can't see another path's value
+  // from that same atomic write -- only pre-update state. So hostUid has to land first.
+  await set(ref(db, `lobbies/${code}/hostUid`), uid)
+
   await update(ref(db), {
-    [`lobbies/${code}/hostUid`]: uid,
     [`lobbies/${code}/status`]: 'waiting',
     [`lobbies/${code}/createdAt`]: serverTimestamp(),
     [`lobbies/${code}/players/${uid}`]: {
