@@ -24,6 +24,15 @@ jobs:
           node-version: 24
           cache: npm
       - run: npm ci
+      - name: Debug - list VITE_FIREBASE_* repo variables as seen by this job
+        run: |
+          echo "VITE_FIREBASE_API_KEY=[${{ vars.VITE_FIREBASE_API_KEY }}]"
+          echo "VITE_FIREBASE_AUTH_DOMAIN=[${{ vars.VITE_FIREBASE_AUTH_DOMAIN }}]"
+          echo "VITE_FIREBASE_DATABASE_URL=[${{ vars.VITE_FIREBASE_DATABASE_URL }}]"
+          echo "VITE_FIREBASE_PROJECT_ID=[${{ vars.VITE_FIREBASE_PROJECT_ID }}]"
+          echo "VITE_FIREBASE_STORAGE_BUCKET=[${{ vars.VITE_FIREBASE_STORAGE_BUCKET }}]"
+          echo "VITE_FIREBASE_MESSAGING_SENDER_ID=[${{ vars.VITE_FIREBASE_MESSAGING_SENDER_ID }}]"
+          echo "VITE_FIREBASE_APP_ID=[${{ vars.VITE_FIREBASE_APP_ID }}]"
       - run: npm run build
         env:
           VITE_FIREBASE_API_KEY: ${{ vars.VITE_FIREBASE_API_KEY }}
