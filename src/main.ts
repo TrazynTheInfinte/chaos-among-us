@@ -90,6 +90,7 @@ createForm.addEventListener('submit', async (event) => {
     const code = await createLobby(name)
     enterLobby(code)
   } catch (error) {
+    console.error('createLobby failed', error)
     showError(error instanceof Error ? error.message : 'Failed to create lobby.')
   }
 })
@@ -103,6 +104,7 @@ joinForm.addEventListener('submit', async (event) => {
     const joinedCode = await joinLobby(code, name)
     enterLobby(joinedCode)
   } catch (error) {
+    console.error('joinLobby failed', error)
     showError(error instanceof Error ? error.message : 'Failed to join lobby.')
   }
 })
@@ -112,6 +114,7 @@ startButtonEl.addEventListener('click', async () => {
   try {
     await startLobby(currentCode)
   } catch (error) {
+    console.error('startLobby failed', error)
     showError(error instanceof Error ? error.message : 'Failed to start game.')
   }
 })
