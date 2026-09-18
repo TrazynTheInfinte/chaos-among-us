@@ -12,7 +12,11 @@ const env = { ...process.env }
 
 if (env.JAVA_HOME) {
   const jdkBin = path.join(env.JAVA_HOME, 'bin')
-  env.PATH = `${jdkBin}${path.delimiter}${env.PATH ?? ''}`
+  // Windows names this variable "Path", not "PATH" -- setting env.PATH as a
+  // new key would create a second, conflicting entry instead of updating the
+  // real one, silently wiping the effective PATH down to just jdkBin.
+  const pathKey = Object.keys(env).find((key) => key.toLowerCase() === 'path') ?? 'PATH'
+  env[pathKey] = `${jdkBin}${path.delimiter}${env[pathKey] ?? ''}`
 }
 
 // Passed as a single string (not an args array) because shell:true on Windows
