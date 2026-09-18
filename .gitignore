@@ -13,3 +13,11 @@ yarn-error.log*
 /dist
 .env
 .env.local
+
+# Firebase emulator suite (local-only; never touches the real project)
+.firebase/
+firebase-debug.log
+database-debug.log
+firestore-debug.log
+ui-debug.log
+firebase-export/

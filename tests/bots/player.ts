@@ -10,6 +10,14 @@
 //
 // Prints one JSON line to stdout: {"ok":true,"code":"ABCDE"} or
 // {"ok":false,"error":"..."}.
+//
+// After a successful "create", the process stays alive instead of exiting:
+// createLobby registers an onDisconnect that ends the lobby for everyone
+// once the host disconnects (see ADR 0001/lobby.ts) -- exactly what a real
+// host's browser tab closing should do, but exiting immediately here would
+// trigger that same disconnect before other bots get a chance to act. The
+// test harness (lobby.test.ts) kills this process once it's done with the
+// lobby, the bot equivalent of the host closing their tab.
 
 import { createLobby, joinLobby } from '../../src/lobby'
 
@@ -37,9 +45,12 @@ async function run(): Promise<BotResult> {
   throw new Error(`Unknown bot action: ${action}`)
 }
 
+const action = process.argv[2]
+
 run()
   .then((result) => {
     console.log(JSON.stringify(result))
+    if (action === 'create' && result.ok) return // stay connected; see header comment
     process.exit(0)
   })
   .catch((error: unknown) => {

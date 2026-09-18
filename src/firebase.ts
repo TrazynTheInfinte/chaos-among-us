@@ -1,6 +1,6 @@
 import { initializeApp } from 'firebase/app'
-import { getAuth, signInAnonymously } from 'firebase/auth'
-import { getDatabase } from 'firebase/database'
+import { connectAuthEmulator, getAuth, signInAnonymously } from 'firebase/auth'
+import { connectDatabaseEmulator, getDatabase } from 'firebase/database'
 
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
@@ -15,6 +15,13 @@ const firebaseConfig = {
 export const app = initializeApp(firebaseConfig)
 export const auth = getAuth(app)
 export const db = getDatabase(app)
+
+// Bot tests point this at the local Firebase Local Emulator Suite (see
+// .env.test) instead of the real project. Never true in dev/prod builds.
+if (import.meta.env.VITE_USE_FIREBASE_EMULATOR === 'true') {
+  connectAuthEmulator(auth, 'http://127.0.0.1:9099', { disableWarnings: true })
+  connectDatabaseEmulator(db, '127.0.0.1', 9000)
+}
 
 let signInPromise: Promise<string> | null = null
 

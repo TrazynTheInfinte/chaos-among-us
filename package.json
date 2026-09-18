@@ -9,7 +9,7 @@
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run"
+    "test": "firebase emulators:exec --project demo-chaos-among-us \"vitest run\""
   },
   "dependencies": {
     "firebase": "^12.19.0",
@@ -17,6 +17,7 @@
   },
   "devDependencies": {
     "@types/node": "^26.6.1",
+    "firebase-tools": "^15.30.2",
     "typescript": "^7.0.2",
     "vite": "^8.3.0",
     "vite-node": "^6.0.0",
